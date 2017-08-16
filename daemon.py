@@ -47,7 +47,10 @@ class TweetDaemon:
     def run(self):
         while(True):
             print("iterating")
-            self.iterate()
+            try:
+                self.iterate()
+            except Exception:
+                pass
             time.sleep(15)
 
 if __name__ == '__main__':

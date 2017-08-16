@@ -3,3 +3,4 @@ vendor
 yolo.sh
 .DS_Store
 ghostdriver.log
+alembic.ini
