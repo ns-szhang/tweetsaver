@@ -24,3 +24,4 @@ def take_screenshot(user, tweet_id):
     k.key = filename
     k.set_contents_from_filename(filename)
     os.remove(filename)
+    return "{}.png".format(tweet_id)

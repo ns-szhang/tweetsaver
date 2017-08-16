@@ -11,7 +11,10 @@ import requests
 from sqlalchemy import create_engine, MetaData
 from twitter import TwitterAPI
 
+from screenshot import take_screenshot
+
 PG_CONNECTION_STRING = os.environ['PG_CONNECTION_STRING']
+TARGET_USER = os.environ['TARGET_USER']
 
 class Bootstrapper:
     def __init__(self, twitter, pg_client, meta, user):
@@ -40,12 +43,14 @@ class Bootstrapper:
                 self.oldest_tweet = tweet['id'] - 1
             if tweet['id'] in self._tweets:
                 continue
+            print("Adding tweet with id:", tweet['id'])
+            filename = take_screenshot(TARGET_USER, tweet['id'])
             tweet_obj = {
                 'tweet_id': tweet['id'],
                 'text': tweet['text'],
-                'added_on': tweet['created_at']
+                'added_on': tweet['created_at'],
+                'screenshot_url': filename
             }
-            print(tweet['id'])
             insert_tweet = self._tweets_table.insert(tweet_obj)
             self._pg_client.execute(insert_tweet)
             self._tweets.add(tweet['id'])
@@ -60,5 +65,5 @@ if __name__ == '__main__':
     pg_client = create_engine(PG_CONNECTION_STRING).connect()
     meta = MetaData()
     meta.reflect(bind=pg_client)
-    bootstrapper = Bootstrapper(twitter, pg_client, meta, 'rmsephy')
+    bootstrapper = Bootstrapper(twitter, pg_client, meta, TARGET_USER)
     bootstrapper.bootstrap()
