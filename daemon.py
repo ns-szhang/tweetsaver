@@ -31,20 +31,20 @@ class TweetDaemon:
 
     def iterate(self):
         tweets = self._twitter.get_tweets(self._user, count=200)
-        # for tweet in tweets:
-        #     if tweet['id'] in self._tweets:
-        #         break
-        #     print("Adding tweet with id:", tweet['id'])
-        #     filename = take_screenshot(TARGET_USER, tweet['id'])
-        #     tweet_obj = {
-        #         'tweet_id': tweet['id'],
-        #         'text': tweet['text'],
-        #         'added_on': tweet['created_at'],
-        #         'screenshot_url': filename
-        #     }
-        #     insert_tweet = self._tweets_table.insert(tweet_obj)
-        #     self._pg_client.execute(insert_tweet)
-        #     self._tweets.add(tweet['id'])
+        for tweet in tweets:
+            if tweet['id'] in self._tweets:
+                break
+            print("Adding tweet with id:", tweet['id'])
+            filename = take_screenshot(TARGET_USER, tweet['id'])
+            tweet_obj = {
+                'tweet_id': tweet['id'],
+                'text': tweet['text'],
+                'added_on': tweet['created_at'],
+                'screenshot_url': filename
+            }
+            insert_tweet = self._tweets_table.insert(tweet_obj)
+            self._pg_client.execute(insert_tweet)
+            self._tweets.add(tweet['id'])
 
         tweet_ids = set(tweet['id'] for tweet in tweets)
         oldest_tweet = min(tweet_ids)
