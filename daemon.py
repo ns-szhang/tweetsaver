@@ -22,32 +22,47 @@ class TweetDaemon:
 
     def get_all_tweets(self):
         '''Get the set of tweet ids already in the database'''
-        tweets = self._pg_client.execute(self._tweets_table.select())
+        tweets = self._pg_client.execute(
+            self._tweets_table.select(self._tweets_table.c.deleted == None)
+        )
         for tweet in tweets:
             self._tweets.add(tweet.tweet_id)
         return self._tweets
 
     def iterate(self):
-        tweets = self._twitter.get_tweets(self._user)
-        for tweet in tweets:
-            if tweet['id'] in self._tweets:
-                continue
-            print("Adding tweet with id:", tweet['id'])
-            filename = take_screenshot(TARGET_USER, tweet['id'])
-            tweet_obj = {
-                'tweet_id': tweet['id'],
-                'text': tweet['text'],
-                'added_on': tweet['created_at'],
-                'screenshot_url': filename
-            }
-            insert_tweet = self._tweets_table.insert(tweet_obj)
-            self._pg_client.execute(insert_tweet)
-            self._tweets.add(tweet['id'])
+        tweets = self._twitter.get_tweets(self._user, count=200)
+        # for tweet in tweets:
+        #     if tweet['id'] in self._tweets:
+        #         break
+        #     print("Adding tweet with id:", tweet['id'])
+        #     filename = take_screenshot(TARGET_USER, tweet['id'])
+        #     tweet_obj = {
+        #         'tweet_id': tweet['id'],
+        #         'text': tweet['text'],
+        #         'added_on': tweet['created_at'],
+        #         'screenshot_url': filename
+        #     }
+        #     insert_tweet = self._tweets_table.insert(tweet_obj)
+        #     self._pg_client.execute(insert_tweet)
+        #     self._tweets.add(tweet['id'])
+
+        tweet_ids = set(tweet['id'] for tweet in tweets)
+        oldest_tweet = min(tweet_ids)
+        tweets_in_db = set(id for id in self._tweets if id > oldest_tweet)
+        deleted_tweets = tweets_in_db - tweet_ids
+        if len(deleted_tweets) > 0:
+            print("The following tweets were deleted:", deleted_tweets)
+
+            for tweet in deleted_tweets:
+                update_tweet = self._tweets_table.update().where(
+                    self._tweets_table.c.tweet_id == tweet).values(deleted=True)
+                self._pg_client.execute(update_tweet)
+        self._tweets = self._tweets - deleted_tweets
+
         return True
 
     def run(self):
         while(True):
-            print("iterating")
             try:
                 self.iterate()
             except Exception:
